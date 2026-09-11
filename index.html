@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>气球打字 · Typing Balloon</title>
+<meta name="description" content="复刻小霸王学习卡《打字游戏》：带字母的气球从上往下落，打字击破，小鸟啄破气球，气球落地会把地面砸塌。纯前端、零构建、零依赖、零资源文件。">
+<!-- 内联 SVG favicon（蓝天 + 一个彩球），保持零资源文件原则 -->
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%235c94fc'/%3E%3Cellipse cx='16' cy='13' rx='9' ry='10' fill='%23f83800'/%3E%3Cellipse cx='12' cy='9' rx='2' ry='3' fill='%23fcfcfc'/%3E%3Crect x='14' y='23' width='4' height='2' fill='%23000'/%3E%3Crect x='15' y='25' width='2' height='5' fill='%23000'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="styles/main.css">
+</head>
+<body>
+
+<div class="app">
+
+  <!-- ── 顶部标题与计数 ─────────────────────────────────────────── -->
+  <div class="content-title">
+    <div id="hits-counter" class="title-counter hits-counter" title="本轮击破的气球数">0</div>
+    <div>
+      <h1 class="title">气 球 打 字</h1>
+      <span class="title-sub">小霸王学习卡《打字游戏》复刻</span>
+    </div>
+    <div id="miss-counter" class="title-counter miss-counter" title="本轮按错的次数">0</div>
+  </div>
+
+  <div class="game-layout">
+
+    <!-- ── 画面区 ──────────────────────────────────────────────── -->
+    <div class="stage-column">
+      <div class="stage-area" id="stage-area">
+        <canvas id="stage" role="img" aria-label="气球打字游戏画面：带字母的气球从天空落下"></canvas>
+
+        <!-- 画面上的多级菜单遮罩 -->
+        <div id="stage-options" class="stage-options">
+
+          <div id="menu-main" class="menu-page">
+            <h3>气球打字</h3>
+            <p>
+              带字母的气球从天上飘下来，按对应的键把它打掉——<br>
+              打对了会飞出一只小鸟把气球啄破。<br>
+              漏掉的气球会砸在地上留下一个坑，坑连成一片，
+              地面就塌一块；塌够几列这一轮就结束（要几列看难度档）。
+            </p>
+            <button id="startbtn" class="btn btn-primary">开始练习</button>
+            <button id="helpbtn" class="btn">玩法说明</button>
+          </div>
+
+          <div id="menu-mode" class="menu-page hide">
+            <h3>选择练习模式</h3>
+            <!-- 模式按钮由 js/ui/menu.js 从 Difficulty.MODES 生成 -->
+            <div id="mode-picker" class="mode-picker"></div>
+            <button id="mode-next" class="btn btn-primary">下一步：选难度</button>
+            <button class="menu-return returnbtn" data-back="main">‹ 返回</button>
+          </div>
+
+          <div id="menu-level" class="menu-page hide">
+            <h3>选择难度</h3>
+            <!-- 档位按钮由 js/ui/menu.js 从 Difficulty.LEVELS 生成，不硬编码文案 -->
+            <div id="level-picker" class="level-picker"></div>
+            <div id="level-desc" class="level-desc"></div>
+            <button id="levelstart" class="btn btn-primary">开始练习</button>
+            <button class="menu-return returnbtn" data-back="mode">‹ 返回选模式</button>
+          </div>
+
+          <div id="menu-help" class="menu-page hide">
+            <h3>玩法说明</h3>
+            <p>
+              <b>键盘</b>：只认字母和数字键，大小写都行。<br>
+              请把输入法切到<b>英文</b>——中文输入法激活时浏览器收不到字母键。<br><br>
+              <b>字母模式</b>：气球上是一个字母，按对应键即击破。<br>
+              <b>单词模式</b>：连续输入完整拼写才击破，中途打错会清空输入。<br>
+              <b>汉字模式</b>：输入气球上汉字的完整拼音（全拼，ü 打 v）。<br><br>
+              按对键 → 侧栏记录下这一次的<b>真实反应时间</b>，不做任何美化。<br>
+              按错键 → 只计入正确率，<b>不会</b>直接判负。<br>
+              真正决定生死的是地面：漏掉的球会砸坑，塌够列数就结束。
+            </p>
+            <button class="menu-return returnbtn" data-back="main">‹ 返回</button>
+          </div>
+
+        </div>
+      </div>
+
+      <div class="stage-hint">
+        <span>键盘输入：<kbd>A</kbd>–<kbd>Z</kbd> / <kbd>0</kbd>–<kbd>9</kbd>（大小写均可）</span>
+        <span id="hint-audio">音效：待启用</span>
+      </div>
+    </div>
+
+    <!-- ── 侧边栏 ──────────────────────────────────────────────── -->
+    <aside class="side-panel">
+
+      <div class="panel-card">
+        <h2>本轮信息</h2>
+        <dl class="info-grid">
+          <dt>模式</dt>
+          <dd id="info-mode">—</dd>
+          <dt>难度</dt>
+          <dd id="info-level">—</dd>
+          <dt>用时</dt>
+          <dd id="info-time">0.0 s</dd>
+          <dt>击破</dt>
+          <dd id="info-hits">0</dd>
+          <dt>失误</dt>
+          <dd id="info-misses">0</dd>
+          <dt>正确率</dt>
+          <dd id="info-acc" class="strong">—</dd>
+          <dt>速度</dt>
+          <dd id="info-cpm">—</dd>
+        </dl>
+
+        <div class="base-meter" id="base-meter">
+          <div class="base-meter-label">
+            <span>地面塌陷</span>
+            <b id="base-meter-text">0 / 0 列</b>
+          </div>
+          <div class="base-meter-bar" id="base-meter-bar"></div>
+        </div>
+
+        <div class="controls compact">
+          <button id="restartbtn" class="btn">重开本轮</button>
+          <button id="menubtn" class="btn">菜单</button>
+          <button id="mutebtn" class="btn btn-ghost">静音</button>
+        </div>
+      </div>
+
+      <div class="panel-card">
+        <h2>击破记录</h2>
+        <p class="panel-sub">
+          每一次击破的反应时间都是当场测出来的，逐条列出、不挑好看的展示。
+          慢于本条可用时间 <span id="slow-threshold">—</span> 的记录标黄。
+        </p>
+        <div class="table-scroll">
+          <table class="stats-table" id="log-table">
+            <thead>
+              <tr>
+                <th>#</th><th>时刻</th><th>目标</th><th>反应</th><th>判定</th>
+              </tr>
+            </thead>
+            <tbody id="log-body"></tbody>
+          </table>
+          <div class="stats-empty" id="log-empty">还没有击破任何气球。</div>
+        </div>
+        <div class="current-status" id="current-status">按「开始练习」挑一个模式。</div>
+      </div>
+
+      <div class="panel-card">
+        <h2>难度参数</h2>
+        <p class="panel-sub">当前档位实际生效的旋钮值，直接来自 <code>Difficulty.LEVELS</code>，不做任何加工。</p>
+        <div class="level-facts" id="level-facts">尚未开始。</div>
+      </div>
+
+    </aside>
+  </div>
+
+  <!-- ── 底部说明 ────────────────────────────────────────────────── -->
+  <div class="engine-note">
+    <h3>关于这个项目</h3>
+    <ul>
+      <li>在线试玩：<a href="https://justa-cai.github.io/typing-balloon/" target="_blank" rel="noopener">justa-cai.github.io/typing-balloon</a><br>
+          源码仓库：<a href="https://github.com/justa-cai/typing-balloon" target="_blank" rel="noopener">github.com/justa-cai/typing-balloon</a></li>
+      <li>复刻对象是<b>小霸王「中英文电脑学习卡」内置的《打字游戏》</b>（SB-926 等机型标配），
+          不是独立发售的游戏，也没有独立 ROM。哪些细节有确证、哪些是推测，
+          逐条记在仓库的 <code>specs/prd.md</code> 里。</li>
+      <li><b>像素风是认真的</b>：逻辑分辨率固定 256×240（FC 原生），显示只取整数倍，
+          字母用五乘七点阵字模逐像素画，汉字用本机字体现场二值化成点阵块，
+          所有图形走 <code>fillRect</code>、不用 <code>ctx.arc</code>（会抗锯齿）。</li>
+      <li><b>音效现场合成</b>：方波 + 三角波 + 噪声，参数写在 <code>js/audio.js</code> 的一张表里，
+          一个音频文件都没有。</li>
+      <li><b>零依赖、零下载</b>：无构建步骤、无 CDN、无图片字体音频资源，
+          整个游戏就是几个文本文件，可直接托管在 GitHub Pages。</li>
+      <li>难度沿用原版的 <b>0～9 十档</b>，四个旋钮（下落秒数 / 生成间隔 / 同屏上限 / 塌陷列数）
+          全部显式写在 <code>js/difficulty.js</code>，测试时可以在 console 里直接读数核对。</li>
+      <li>许可为 MIT（全自研，无第三方代码与资源）。调研来源与自研声明见 <code>NOTICE.md</code>。</li>
+    </ul>
+  </div>
+
+</div>
+
+<!-- ── 结算浮层 ──────────────────────────────────────────────────── -->
+<div id="game-summary" class="game-summary hide">
+  <div class="game-summary-card">
+    <h2 id="summary-title">本轮结束</h2>
+    <div class="summary-grade" id="summary-grade">—</div>
+    <table class="summary-table">
+      <tbody id="summary-body"></tbody>
+    </table>
+    <div class="summary-detail" id="summary-text"></div>
+    <div class="controls">
+      <button id="summary-again" class="btn btn-primary">再来一轮</button>
+      <button id="summary-menu" class="btn">换个模式</button>
+      <button id="summary-close" class="btn btn-ghost">看看画面</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="toast hide"></div>
+
+<!-- 经典脚本：暴露全局对象 Difficulty（档位参数表 / 模式表） -->
+<script src="js/difficulty.js"></script>
+<!-- 应用本体是 ES 模块，在上面的经典脚本之后执行 -->
+<script type="module" src="js/app.js"></script>
+
+</body>
+</html>

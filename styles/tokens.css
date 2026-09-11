@@ -1,0 +1,81 @@
+:root {
+  /* ── 系列通用 token ──────────────────────────────────────────────────
+     与 02.chess / 03.chess_master / 04.Gomoku 同名同义，跨项目一眼能认。
+     除下面单列的 NES 调色板外，这里的值刻意与前三个项目保持一致。 */
+
+  --color-bg-primary: #727272;
+  --color-panel-bg: #20242b;
+  --color-panel-border: rgba(255, 255, 255, 0.08);
+  --color-panel-shadow: 0 3px 10px rgba(0, 0, 0, 0.22);
+
+  --color-text-main: #e8eaef;
+  --color-text-muted: #aeb5c2;
+  --color-text-dark: #333333;
+  --color-text-light: #ffffff;
+
+  --color-score-positive: #78c7ff;
+  --color-score-negative: #ffd36b;
+  --color-score-neutral: #e8eaef;
+
+  --color-source-ai: #78c7ff;
+  --color-source-human: #f4d06f;
+
+  --color-brand: #8c2d19;
+  --color-accent: #27ae60;
+
+  /* 画布外框（前作是木色棋盘，本项目改成游戏机塑料外壳的灰，
+     token 名沿用 --color-board-* 以免破坏跨项目的一致性） */
+  --color-board-frame: #34383f;
+  --color-board-frame-edge: #4d535c;
+
+  --radius-card: 12px;
+  --radius-btn: 6px;
+
+  --transition-fast: 0.15s ease;
+  --transition-normal: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* ── 画面区尺寸 ──────────────────────────────────────────────────────
+     JS 会在这个框里按**整数倍**放 256×240 的逻辑画布。
+     两个方向都要 clamp：只按宽算，14 寸屏上画面会顶出可视区。
+     高度取到 72vh 是为了在 1080p 上够得着 3 倍（3×240 + 边距 ≈ 740px），
+     再高就会挤掉侧栏和底部说明。 */
+  --stage-area-w: clamp(304px, 52vw, 1024px);
+  --stage-area-h: clamp(285px, 72vh, 960px);
+  --panel-width: clamp(430px, 26vw, 560px);
+
+  /* ── NES 调色板（本项目独有）────────────────────────────────────────
+     取自 NES 硬件调色板的常见档位，全部是纯色、无渐变——
+     渲染层按 image-rendering: pixelated 放大，渐变会露馅。
+     改配色只改这里，js/ui/stage.js 里不出现任何硬编码色值。 */
+
+  /* 天幕与云 */
+  --nes-sky: #5c94fc;
+  --nes-cloud: #fcfcfc;
+  --nes-cloud-shade: #b8d8f8;
+
+  /* 顶部信息条 */
+  --nes-hud-bg: #000000;
+  --nes-text: #fcfcfc;
+  --nes-text-dim: #bcbcbc;
+  --nes-ink: #000000;
+  --nes-outline: #000000;
+
+  /* 地面 */
+  --nes-grass: #00a800;
+  --nes-grass-dark: #007800;
+  --nes-dirt: #c84c0c;
+  --nes-dirt-dark: #8c3000;
+
+  /* 小鸟的喙 */
+  --nes-beak: #fce438;
+
+  /* 气球配色：8 色，按色相拉开，保证相邻球在灰度下也分得清 */
+  --nes-balloon-0: #f83800;  /* 红 */
+  --nes-balloon-1: #fc9838;  /* 橙 */
+  --nes-balloon-2: #fce438;  /* 黄 */
+  --nes-balloon-3: #00a800;  /* 绿 */
+  --nes-balloon-4: #3cbcfc;  /* 天蓝 */
+  --nes-balloon-5: #b800b8;  /* 紫 */
+  --nes-balloon-6: #d882f8;  /* 粉 */
+  --nes-balloon-7: #fcfcfc;  /* 白 */
+}

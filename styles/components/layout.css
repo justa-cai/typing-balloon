@@ -1,0 +1,159 @@
+.app {
+  max-width: 1760px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 0 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+}
+
+/* ── 顶部标题栏 ───────────────────────────────────────────────────── */
+
+.content-title {
+  width: 100%;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+}
+
+.title-counter {
+  min-width: 68px;
+  height: 56px;
+  padding: 0 14px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  transition: transform var(--transition-fast);
+  flex: 0 0 auto;
+}
+
+.title-counter.hits-counter {
+  background: rgba(0, 0, 0, 0.45);
+  color: var(--color-text-light);
+}
+
+.title-counter.miss-counter {
+  background: rgba(255, 255, 255, 0.85);
+  color: var(--color-text-dark);
+}
+
+.title-counter.bump {
+  transform: scale(1.14);
+}
+
+.title {
+  font-size: clamp(24px, 4vw, 40px);
+  letter-spacing: 0.18em;
+  font-weight: 800;
+  text-shadow: 0 3px 10px rgba(0, 0, 0, 0.35);
+  color: var(--color-text-light);
+}
+
+.title-sub {
+  display: block;
+  margin-top: 4px;
+  font-size: 12px;
+  letter-spacing: 0.16em;
+  font-weight: 500;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+/* ── 主区：桌面端左右双栏 ─────────────────────────────────────────── */
+
+.game-layout {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 20px;
+  align-items: start;
+  justify-content: center;
+}
+
+/* 双栏断点取「画面区 + 侧栏」最小宽度之和再留点余量，
+   否则 1100px 附近会横向溢出 */
+@media (min-width: 1200px) {
+  .game-layout {
+    grid-template-columns: minmax(304px, auto) var(--panel-width);
+    justify-content: center;
+  }
+}
+
+/* ── 画面区外框（像个 CRT 显示器外壳）─────────────────────────────── */
+
+.stage-column {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.stage-area {
+  width: var(--stage-area-w);
+  height: var(--stage-area-h);
+  padding: 10px;
+  border-radius: 10px;
+  background: var(--color-board-frame);
+  border: 1px solid var(--color-board-frame-edge);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.32), inset 0 0 0 1px rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+/* ── 底部说明区块 ─────────────────────────────────────────────────── */
+
+.engine-note {
+  width: 100%;
+  max-width: 940px;
+  margin-top: 6px;
+  padding: 16px 20px;
+  border-radius: var(--radius-card);
+  background: rgba(0, 0, 0, 0.18);
+  border: 1px solid var(--color-panel-border);
+  font-size: 13px;
+  line-height: 1.75;
+  color: var(--color-text-muted);
+}
+
+.engine-note h3 {
+  font-size: 14px;
+  color: var(--color-text-main);
+  margin-bottom: 6px;
+}
+
+.engine-note ul {
+  padding-left: 20px;
+}
+
+.engine-note code {
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  font-size: 12px;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.09);
+  color: var(--color-text-main);
+}
+
+.engine-note a {
+  color: var(--color-score-positive);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  text-decoration-thickness: 1px;
+  word-break: break-all;
+}
+
+.engine-note a:hover,
+.engine-note a:focus-visible {
+  color: #b9e0ff;
+}
