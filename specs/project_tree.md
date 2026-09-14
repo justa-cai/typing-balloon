@@ -179,9 +179,10 @@
 
 ### 2.4 音效层 `js/audio.js`（ESM）
 
-- `RECIPES` 表：`pop` / `miss` / `land` / `collapse` / `start` / `over`，
-  每条由若干"层"组成（脉冲 / 三角 / 噪声片段）；
+- `RECIPES` 表：`pop` / `key` / `combo` / `miss` / `spawn` / `land` / `collapse`
+  / `uiMove` / `start` / `over`，每条由若干"层"组成（脉冲 / 三角 / 噪声片段）；
 - `createAudio({muted})` → `{unlock, play, ready, isMuted, setMuted}`；
+- `play(name, {semitones})` 支持整体变调（含噪声层低通扫频），连击音靠它爬音阶；
 - **惰性建 `AudioContext`**：第一次真正出声前什么都不建，由 `app.js` 在第一次
   `keydown`/`pointerdown` 时 `unlock()`；
 - **静音 = 不排音**（`play()` 第一行 return），不是把音量调成 0——
@@ -244,15 +245,15 @@ index.html
 | 文件 | 字节 | 备注 |
 |---|--:|---|
 | `js/data/words.js` | 24,550 | 题库数据，占整个仓库约 1/6 |
-| `js/rules.js` | 20,549 | 规则层，注释量约占一半 |
+| `js/rules.js` | 20,958 | 规则层，注释量约占一半 |
 | `js/ui/stage.js` | 17,341 | 渲染层 |
-| `js/app.js` | 16,754 | 主控 |
+| `js/app.js` | 17,477 | 主控 |
 | `index.html` | 10,423 | 骨架 + 玩法说明文案 |
+| `js/audio.js` | 10,174 | 音效表 + 合成 |
 | `js/ui/pixelfont.js` | 9,571 | 字模表体积主要在 `GLYPHS` |
-| `js/ui/menu.js` | 8,328 | |
-| `js/audio.js` | 8,214 | |
+| `js/ui/menu.js` | 8,771 | |
 | `js/difficulty.js` | 7,774 | |
 | `js/ui/panel.js` | 7,508 | |
-| `styles/**` | 18,553 | 7 个文件 |
+| `styles/**` | 22,381 | 8 个文件 |
 | `server.py` | 1,957 | |
-| **合计** | **约 160 KB** | 无任何二进制文件 |
+| **合计** | **约 155 KB** | 无任何二进制文件 |

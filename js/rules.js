@@ -171,6 +171,8 @@ export function createGame({ mode, level, configFor, rng }) {
       typed: 0,       // 正确按键数（含尚未凑成目标的推进）
       misses: 0,      // 失误按键数
       landed: 0,      // 落地气球数
+      combo: 0,       // 当前连击：连续击破、中间没有失误也没有漏球
+      bestCombo: 0,   // 本轮最高连击
       startedAt: 0,   // 本轮开始时的 clock
       endedAt: 0
     },
@@ -492,6 +494,8 @@ function popBalloon(state, b) {
 
   state.stats.hits += 1;
   state.stats.chars += b.match.length;
+  state.stats.combo += 1;
+  if (state.stats.combo > state.stats.bestCombo) state.stats.bestCombo = state.stats.combo;
   pushLog(state, {
     ok: true,
     text: b.text,
@@ -513,12 +517,13 @@ function popBalloon(state, b) {
   });
 
   resetBuffer(state);
-  return { type: 'pop', balloon: b, reactionMs: reaction };
+  return { type: 'pop', balloon: b, reactionMs: reaction, combo: state.stats.combo };
 }
 
 /** 记一次失误 */
 function missEvent(state, key) {
   state.stats.misses += 1;
+  state.stats.combo = 0; // 打错即断连
   pushLog(state, {
     ok: false,
     text: key.toUpperCase(),
@@ -534,6 +539,7 @@ function missEvent(state, key) {
 function landBalloon(state, b) {
   const events = [];
   state.stats.landed += 1;
+  state.stats.combo = 0; // 漏一个球也算断连：连击是"干净的连续击破"
 
   const cx = b.x + b.w / 2;
   const col = clampCol(Math.floor(cx / (GEOMETRY.W / GEOMETRY.COLUMNS)));

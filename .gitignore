@@ -3,3 +3,12 @@ Thumbs.db
 __pycache__/
 *.pyc
 node_modules/
+
+# 临时文件（调试脚本、截图、日志等，见 CLAUDE.md）
+tmp/
+
+# CodeGraph 本地索引
+.codegraph/
+
+# playwright-cli 的快照产物
+.playwright-cli/

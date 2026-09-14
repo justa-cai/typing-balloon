@@ -24,8 +24,9 @@ GitHub Pages.
   which anti-alias and turn hard pixel edges into grey mush.
 - **Sound synthesised in the browser** — square/saw via `createPeriodicWave`
   duty cycles, triangle, and a deterministic noise buffer through a swept
-  low-pass. Six effects, all parameters in one table in `js/audio.js`.
-  Zero audio files.
+  low-pass. Ten effects, all parameters in one table in `js/audio.js`.
+  Zero audio files. Effects are driven by game events only — `audio.js` never
+  reads game state (see the architecture note below).
 - **Three practice modes** — finger placement on letters, English words,
   Hanzi by full pinyin.
 - **Ten difficulty levels (0–9)**, matching the original. Four knobs per level

@@ -65,6 +65,9 @@ let lastSummary = null;
 
 const menu = createMenu({
   difficulty: Difficulty,
+  // 菜单不 import audio（保持"只管显示、点了回调谁"的分层），
+  // 音效由这一层注进去，它只负责在点按钮时喊一声
+  sfx: (name) => audio.play(name),
   onStart: (sel) => startRound(sel),
   onRestart: () => startRound(current),
   onMenu: () => { paused = true; panel.setStatus('已暂停，选好模式和难度再开始。'); }
@@ -164,6 +167,7 @@ function buildSummary(s) {
     ['用时', `${(ms / 1000).toFixed(1)} s`],
     ['击破气球', `${s.stats.hits} 个`],
     ['击破字数', `${s.stats.chars} 字`],
+    ['最高连击', `${s.stats.bestCombo} 连`],
     ['正确按键', `${s.stats.typed} 次`],
     ['失误', `${s.stats.misses} 次`],
     ['正确率', `${(acc * 100).toFixed(1)}%`],
@@ -205,7 +209,16 @@ function handleEvents(events) {
     switch (e.type) {
       case 'pop':
         audio.play('pop');
+        // 从第 2 连击起叠一个随连击升高的点缀音，最高抬一个八度
+        if (e.combo >= 2) audio.play('combo', { semitones: Math.min(e.combo - 2, 12) });
         panel.bump('hits');
+        break;
+      case 'progress':
+        // 目标还没打完，但这一下按对了——给个逐键反馈
+        audio.play('key');
+        break;
+      case 'spawn':
+        audio.play('spawn');
         break;
       case 'miss':
         audio.play('miss');
@@ -255,6 +268,7 @@ document.addEventListener('keydown', unlockOnce);
 document.getElementById('restartbtn').addEventListener('click', () => startRound(current));
 document.getElementById('menubtn').addEventListener('click', () => {
   paused = true;
+  audio.play('uiMove');
   menu.open('main');
   panel.setStatus('已暂停，选好模式和难度再开始。');
 });
@@ -420,6 +434,8 @@ window.TypingGame = {
       misses: state.stats.misses,
       typed: state.stats.typed,
       landed: state.stats.landed,
+      combo: state.stats.combo,
+      bestCombo: state.stats.bestCombo,
       accuracy: Number(rules.accuracy(state).toFixed(4)),
       cpm: Number(rules.cpm(state).toFixed(1)),
       balloons: state.balloons.length,

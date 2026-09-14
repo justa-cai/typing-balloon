@@ -52,6 +52,28 @@ const RECIPES = {
     { wave: 'square', freq: 330, freqTo: 62, t: 0, dur: 0.44, gain: 0.4, duty: 0.125 },
     { wave: 'triangle', freq: 110, freqTo: 45, t: 0.05, dur: 0.4, gain: 0.55 }
   ],
+  // 逐键命中：每打对一个字符一声轻脆"哒"。这是打字游戏最基本的反馈——
+  // 不用等气球炸开就知道"这一下按对了"。音量压得比 pop 低得多，
+  // 连打一整句也不会盖过击破声，只当节奏垫底。
+  key: [
+    { wave: 'square', freq: 1180, freqTo: 880, t: 0, dur: 0.022, gain: 0.13, duty: 0.125 }
+  ],
+  // 连击点缀：从第 2 连击起和 pop 一起响。音高不写死在这里，由 play 时
+  // 传的 semitones 按连击数抬高（最高一个八度），连得越久爬得越高。
+  combo: [
+    { wave: 'square', freq: 1319, t: 0, dur: 0.045, gain: 0.2, duty: 0.125 },
+    { wave: 'square', freq: 1760, t: 0.04, dur: 0.06, gain: 0.18, duty: 0.125 }
+  ],
+  // 气球生成：很轻的一声上滑 whoosh，提示"来了个新目标"。
+  // 出球密时这声会连成一片，所以音量刻意比其他音效更低。
+  spawn: [
+    { wave: 'noise', t: 0, dur: 0.08, gain: 0.17, filterFrom: 600, filterTo: 2400 },
+    { wave: 'triangle', freq: 320, freqTo: 620, t: 0, dur: 0.07, gain: 0.12 }
+  ],
+  // 菜单/UI 点击：短促单音，切页、选项、关浮层都用它
+  uiMove: [
+    { wave: 'square', freq: 740, t: 0, dur: 0.035, gain: 0.2, duty: 0.25 }
+  ],
   // 开始：上行两音，像游戏机"叮咚"一下
   start: [
     { wave: 'square', freq: 523, t: 0, dur: 0.07, gain: 0.4, duty: 0.5 },
@@ -99,18 +121,23 @@ export function createAudio({ muted = false } = {}) {
   /**
    * 播放一个音效。
    * @param {string} name RECIPES 里的键
+   * @param {object} [opts]
+   * @param {number} [opts.semitones=0] 整体升降的半音数（连击音靠它爬音阶）
    */
-  function play(name) {
+  function play(name, { semitones = 0 } = {}) {
     if (isMuted) return;
     const recipe = RECIPES[name];
     if (!recipe) return;
     if (!unlock()) return;
 
+    // 变调：整条配方一起移调，连噪声层里的滤波扫频也跟着走，
+    // 不至于只有方波在飘、噪声还留在原地。
+    const pitch = semitones ? Math.pow(2, semitones / 12) : 1;
     const t0 = ctx.currentTime + 0.001;
     for (const layer of recipe) {
       try {
-        if (layer.wave === 'noise') playNoise(layer, t0);
-        else playTone(layer, t0);
+        if (layer.wave === 'noise') playNoise(layer, t0, pitch);
+        else playTone(layer, t0, pitch);
       } catch (err) {
         // 单个音效层失败不该让游戏崩掉
         console.warn('[audio] 播放失败', name, err);
@@ -119,7 +146,7 @@ export function createAudio({ muted = false } = {}) {
   }
 
   /** 合成一个方波/三角波片段 */
-  function playTone(layer, t0) {
+  function playTone(layer, t0, pitch = 1) {
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
 
@@ -131,8 +158,10 @@ export function createAudio({ muted = false } = {}) {
 
     const start = t0 + (layer.t || 0);
     const end = start + layer.dur;
-    osc.frequency.setValueAtTime(layer.freq, start);
-    if (layer.freqTo) osc.frequency.exponentialRampToValueAtTime(Math.max(1, layer.freqTo), end);
+    osc.frequency.setValueAtTime(layer.freq * pitch, start);
+    if (layer.freqTo) {
+      osc.frequency.exponentialRampToValueAtTime(Math.max(1, layer.freqTo * pitch), end);
+    }
 
     // 方波直接开关会有咔哒声，给 6ms 的淡入 + 指数淡出
     const g = layer.gain != null ? layer.gain : 0.4;
@@ -146,7 +175,7 @@ export function createAudio({ muted = false } = {}) {
   }
 
   /** 合成一段噪声（带低通扫频） */
-  function playNoise(layer, t0) {
+  function playNoise(layer, t0, pitch = 1) {
     const src = ctx.createBufferSource();
     src.buffer = noiseBuffer;
     src.loop = true;
@@ -158,9 +187,11 @@ export function createAudio({ muted = false } = {}) {
     const start = t0 + (layer.t || 0);
     const end = start + layer.dur;
 
-    filter.frequency.setValueAtTime(layer.filterFrom || 2000, start);
+    // 滤波频率也跟着变调，但要夹在可听范围内
+    const from = clampFreq((layer.filterFrom || 2000) * pitch);
+    filter.frequency.setValueAtTime(from, start);
     if (layer.filterTo) {
-      filter.frequency.exponentialRampToValueAtTime(Math.max(40, layer.filterTo), end);
+      filter.frequency.exponentialRampToValueAtTime(clampFreq(layer.filterTo * pitch), end);
     }
 
     const g = layer.gain != null ? layer.gain : 0.4;
@@ -184,6 +215,11 @@ export function createAudio({ muted = false } = {}) {
       if (master) master.gain.value = isMuted ? 0 : MASTER;
     }
   };
+}
+
+/** 变调后的滤波频率夹在 40Hz～16kHz，免得超出可听范围或撞上奈奎斯特 */
+function clampFreq(hz) {
+  return Math.max(40, Math.min(16000, hz));
 }
 
 /** 生成一段 1 秒的白噪声，反复复用，不必每次重建 */

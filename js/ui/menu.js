@@ -14,10 +14,13 @@
  * @param {(sel: {mode: string, level: number}) => void} opts.onStart 点「开始练习」
  * @param {() => void} opts.onRestart 结算浮层里的「再来一轮」
  * @param {() => void} opts.onMenu    结算浮层里的「换个模式」
+ * @param {(name: string) => void} [opts.sfx] 点击音效回调（由 app.js 注入 audio）
  * @returns {object} 菜单控制器
  */
-export function createMenu({ difficulty, onStart, onRestart, onMenu }) {
+export function createMenu({ difficulty, onStart, onRestart, onMenu, sfx = () => {} }) {
   const $ = (id) => document.getElementById(id);
+  /** 所有"切页 / 选中 / 关浮层"的点击统一哼一声 */
+  const click = () => sfx('uiMove');
 
   const overlay = $('stage-options');
   const pages = {
@@ -52,6 +55,7 @@ export function createMenu({ difficulty, onStart, onRestart, onMenu }) {
                       `<span class="mode-desc">${escapeHtml(m.desc)}</span>`;
       btn.addEventListener('click', () => {
         selection.mode = m.id;
+        click();
         markActive();
         renderLevelDesc();
       });
@@ -69,6 +73,7 @@ export function createMenu({ difficulty, onStart, onRestart, onMenu }) {
       btn.textContent = `${lv.level} ${lv.name}`;
       btn.addEventListener('click', () => {
         selection.level = lv.level;
+        click();
         markActive();
         renderLevelDesc();
       });
@@ -80,16 +85,17 @@ export function createMenu({ difficulty, onStart, onRestart, onMenu }) {
   function bindEvents() {
     // 主菜单的「开始练习」进的是**选模式**页，不是直接开局——
     // 直接开局等于把模式和难度锁死在默认档，那两个选择页就成了死页面。
-    $('startbtn').addEventListener('click', () => showPage('mode'));
-    $('helpbtn').addEventListener('click', () => showPage('help'));
-    $('mode-next').addEventListener('click', () => showPage('level'));
+    $('startbtn').addEventListener('click', () => { click(); showPage('mode'); });
+    $('helpbtn').addEventListener('click', () => { click(); showPage('help'); });
+    $('mode-next').addEventListener('click', () => { click(); showPage('level'); });
+    // 「开始练习」本身不出 click 声——开局会播更正式的 start 音，别叠在一起
     $('levelstart').addEventListener('click', () => { close(); onStart({ ...selection }); });
     for (const el of document.querySelectorAll('.returnbtn')) {
-      el.addEventListener('click', () => showPage(el.dataset.back));
+      el.addEventListener('click', () => { click(); showPage(el.dataset.back); });
     }
     $('summary-again').addEventListener('click', () => { hideSummary(); onRestart(); });
-    $('summary-menu').addEventListener('click', () => { hideSummary(); open('mode'); onMenu(); });
-    $('summary-close').addEventListener('click', hideSummary);
+    $('summary-menu').addEventListener('click', () => { click(); hideSummary(); open('mode'); onMenu(); });
+    $('summary-close').addEventListener('click', () => { click(); hideSummary(); });
 
     // Esc 关掉结算浮层（不是关菜单——菜单关掉会让游戏在没准备好的情况下开跑）
     document.addEventListener('keydown', (e) => {
