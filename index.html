@@ -49,8 +49,17 @@
             <h3>选择练习模式</h3>
             <!-- 模式按钮由 js/ui/menu.js 从 Difficulty.MODES 生成 -->
             <div id="mode-picker" class="mode-picker"></div>
-            <button id="mode-next" class="btn btn-primary">下一步：选难度</button>
+            <button id="mode-next" class="btn btn-primary">下一步</button>
             <button class="menu-return returnbtn" data-back="main">‹ 返回</button>
+          </div>
+
+          <div id="menu-keys" class="menu-page hide">
+            <h3>选择键位组</h3>
+            <!-- 组按钮由 js/ui/menu.js 从 Difficulty.KEY_GROUPS 生成 -->
+            <div id="group-picker" class="level-picker"></div>
+            <div id="group-desc" class="level-desc"></div>
+            <button id="group-next" class="btn btn-primary">下一步：选难度</button>
+            <button class="menu-return returnbtn" data-back="mode">‹ 返回选模式</button>
           </div>
 
           <div id="menu-level" class="menu-page hide">
@@ -59,7 +68,7 @@
             <div id="level-picker" class="level-picker"></div>
             <div id="level-desc" class="level-desc"></div>
             <button id="levelstart" class="btn btn-primary">开始练习</button>
-            <button class="menu-return returnbtn" data-back="mode">‹ 返回选模式</button>
+            <button id="level-back" class="menu-return returnbtn" data-back="mode">‹ 返回上一步</button>
           </div>
 
           <div id="menu-help" class="menu-page hide">
@@ -67,6 +76,8 @@
             <p>
               <b>键盘</b>：只认字母和数字键，大小写都行。<br>
               请把输入法切到<b>英文</b>——中文输入法激活时浏览器收不到字母键。<br><br>
+              <b>键位模式</b>：只出当前键位组里的键（如基准键·左手只有 A S D F G），
+              按键盘区域一组一组练，手指击完回到基准行。<br>
               <b>字母模式</b>：气球上是一个字母，按对应键即击破。<br>
               <b>单词模式</b>：连续输入完整拼写才击破，中途打错会清空输入。<br>
               <b>汉字模式</b>：输入气球上汉字的完整拼音（全拼，ü 打 v）。<br><br>

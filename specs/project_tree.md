@@ -7,7 +7,7 @@
 ├── index.html                  # 唯一入口（五段式骨架，无硬编码档位文案）
 ├── js/
 │   ├── app.js                  # 主控：唯一调度中心，装配所有层；暴露调试句柄
-│   ├── difficulty.js           # ★ 难度单一事实来源（十档 + 三模式，经典脚本）
+│   ├── difficulty.js           # ★ 难度单一事实来源（十档 + 四模式 + 十键位组，经典脚本）
 │   ├── rules.js                # 裁判层：生成/下落/匹配/计分/地面塌陷/结束
 │   ├── audio.js                # Web Audio 现场合成的 FC 风格音效
 │   ├── data/
@@ -65,8 +65,8 @@
 
 **唯一的难度事实来源。** 用 `<script src>` 加载而不是 ESM，原因有二：
 
-1. 档位按钮 / 模式按钮全部由 `ui/menu.js` 从 `LEVELS` / `MODES` 现生成，
-   文案与参数永远同源；
+1. 档位按钮 / 模式按钮 / 键位组按钮全部由 `ui/menu.js` 从 `LEVELS` / `MODES` /
+   `KEY_GROUPS` 现生成，文案与参数永远同源；
 2. 调参时可以在 console / playwright 里**直接读 `Difficulty` 做参数扫描**。
 
 对外 API：
@@ -75,11 +75,13 @@
 |---|---|
 | `MAX_LEVEL` | 9 |
 | `LEVELS` | 十档原始参数（含 `letters` / `wordTier` / `hanziTier`） |
-| `MODES` | 三种模式的 `{id, name, short, desc}` |
+| `MODES` | 四种模式的 `{id, name, short, desc}`，键位分区排第一位 |
+| `KEY_GROUPS` | 键位分区模式的十个键位组 `{group, name, keys, desc}` |
 | `PER_CHAR_BONUS_SEC` | 0.55，每多 1 字符补偿的下落秒数 |
-| `MODE_SPAWN_SCALE` | `{letters:1.0, words:1.3, hanzi:1.3}` |
+| `MODE_SPAWN_SCALE` | `{keys:1.0, letters:1.0, words:1.3, hanzi:1.3}` |
 | `level(n)` | 取某档的**副本**（越界夹紧，不抛错） |
-| `config(modeId, n, len)` | 某档 + 某模式 + 目标长度的最终生效参数 |
+| `keyGroup(n)` | 取某键位组的**副本**（越界夹紧，不抛错） |
+| `config(modeId, n, len, groupId)` | 某档 + 某模式 + 目标长度的最终生效参数；keys 模式额外附 `keys` / `groupId` / `groupName` |
 
 **注意 `config()` 的第三个参数 `len`**：下落时间按目标字符数补偿，
 `rules.js` 里所有取参数的地方走的都是 `configFor(len)` 而不是缓存的 `config`。
@@ -170,7 +172,8 @@
 
 只管"显示什么、点了之后回调谁"。**不碰游戏状态、不碰规则。**
 
-- 模式按钮 / 档位按钮从 `Difficulty.MODES` / `Difficulty.LEVELS` 现生成；
+- 模式按钮 / 键位组按钮 / 档位按钮从 `Difficulty.MODES` / `Difficulty.KEY_GROUPS`
+  / `Difficulty.LEVELS` 现生成；
 - 「开始练习」进的是**选模式页**而不是直接开局——直接开局等于把模式和难度锁死在
   默认档，那两个选择页就成了死页面；
 - `setSelection()` 把菜单选中态同步成"当前正在玩的那一档"，由 `app.js` 在开局时
@@ -245,15 +248,15 @@ index.html
 | 文件 | 字节 | 备注 |
 |---|--:|---|
 | `js/data/words.js` | 24,550 | 题库数据，占整个仓库约 1/6 |
-| `js/rules.js` | 20,958 | 规则层，注释量约占一半 |
+| `js/rules.js` | 21,403 | 规则层，注释量约占一半 |
 | `js/ui/stage.js` | 17,341 | 渲染层 |
-| `js/app.js` | 17,477 | 主控 |
-| `index.html` | 10,423 | 骨架 + 玩法说明文案 |
+| `js/app.js` | 18,210 | 主控 |
+| `index.html` | 11,120 | 骨架 + 玩法说明文案 |
+| `js/difficulty.js` | 10,860 | 档位 / 模式 / 键位组表 |
 | `js/audio.js` | 10,174 | 音效表 + 合成 |
 | `js/ui/pixelfont.js` | 9,571 | 字模表体积主要在 `GLYPHS` |
-| `js/ui/menu.js` | 8,771 | |
-| `js/difficulty.js` | 7,774 | |
-| `js/ui/panel.js` | 7,508 | |
+| `js/ui/menu.js` | 10,735 | |
+| `js/ui/panel.js` | 7,679 | |
 | `styles/**` | 22,381 | 8 个文件 |
 | `server.py` | 1,957 | |
-| **合计** | **约 155 KB** | 无任何二进制文件 |
+| **合计** | **约 157 KB** | 无任何二进制文件 |

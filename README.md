@@ -27,8 +27,9 @@ GitHub Pages.
   low-pass. Ten effects, all parameters in one table in `js/audio.js`.
   Zero audio files. Effects are driven by game events only — `audio.js` never
   reads game state (see the architecture note below).
-- **Three practice modes** — finger placement on letters, English words,
-  Hanzi by full pinyin.
+- **Four practice modes** — keyboard-region drills for absolute beginners
+  (ten groups: home row left/right, upper row, lower row, then the full
+  alphabet), finger placement on letters, English words, Hanzi by full pinyin.
 - **Ten difficulty levels (0–9)**, matching the original. Four knobs per level
   (fall seconds / spawn interval / on-screen cap / collapse threshold) are
   written out explicitly in `js/difficulty.js` — read them straight from the
@@ -48,6 +49,7 @@ character and the balloon bursts — a bird flies in from the right to peck it.
 
 | Mode | Balloon carries | What you type |
 |---|---|---|
+| Key groups | a key from the current group (e.g. `A S D F G`) | that key |
 | Letters | `A`–`Z` (one character) | that key |
 | Words | an English word | the full spelling |
 | Hanzi | a Chinese character | its **full pinyin** (`ü` is typed as `v`) |

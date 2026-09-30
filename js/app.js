@@ -73,8 +73,8 @@ const menu = createMenu({
   onMenu: () => { paused = true; panel.setStatus('已暂停，选好模式和难度再开始。'); }
 });
 
-/** 当前选择的模式与档位（重开时用） */
-let current = { mode: Difficulty.MODES[0].id, level: 0 };
+/** 当前选择的模式、键位组与档位（重开时用）。默认落在 MODES[0]=键位分区上 */
+let current = { mode: Difficulty.MODES[0].id, level: 0, group: 0 };
 
 // ──────────────────────────────────────────────────────────────────────
 // 生命周期
@@ -93,18 +93,19 @@ function makeIdleState() {
 
 /**
  * 开一轮。
- * @param {object} sel {mode, level}
+ * @param {object} sel {mode, level, group}
  * @param {() => number} [sel.rng] 可选的确定性随机源（自动化复现用）
  */
 function startRound(sel, rng) {
   const mode = sel.mode || current.mode;
   const level = Number.isFinite(sel.level) ? sel.level : current.level;
-  current = { mode, level };
+  const group = Number.isFinite(sel.group) ? sel.group : current.group;
+  current = { mode, level, group };
 
   state = rules.createGame({
     mode,
     level,
-    configFor: (len) => Difficulty.config(mode, level, len),
+    configFor: (len) => Difficulty.config(mode, level, len, group),
     rng
   });
   state.status = 'running';
@@ -112,13 +113,17 @@ function startRound(sel, rng) {
 
   const modeInfo = Difficulty.MODES.find((m) => m.id === mode) || Difficulty.MODES[0];
   const lv = Difficulty.level(level);
-  panel.setFacts(lv, Difficulty.config(mode, level, 1), modeInfo);
+  const groupInfo = mode === 'keys' ? Difficulty.keyGroup(group) : null;
+  panel.setFacts(lv, Difficulty.config(mode, level, 1, group), modeInfo);
   panel.reset();
-  panel.setStatus(`正在练「${modeInfo.name}」${level} ${lv.name}。`, 'busy');
+  panel.setStatus(
+    `正在练「${modeInfo.name}」${groupInfo ? `${groupInfo.name} ` : ''}${level} ${lv.name}。`,
+    'busy'
+  );
 
   menu.close();
   menu.hideSummary();
-  menu.setSelection({ mode, level }); // 菜单高亮跟着实际在玩的那一档走
+  menu.setSelection({ mode, level, group }); // 菜单高亮跟着实际在玩的那一档走
   audio.unlock();
   audio.play('start');
 
@@ -163,7 +168,14 @@ function buildSummary(s) {
 
   const rows = [
     ['模式', modeInfo.name],
-    ['难度', `${lv.level} ${lv.name}`],
+    ['难度', `${lv.level} ${lv.name}`]
+  ];
+  // 键位分区模式把练的是哪一组也写进成绩单，复盘时才知道弱点在哪一排
+  if (s.mode === 'keys') {
+    const g = Difficulty.keyGroup(s.config.groupId);
+    rows.push(['键位组', `${g.name} ${g.keys.toUpperCase()}`]);
+  }
+  rows.push(
     ['用时', `${(ms / 1000).toFixed(1)} s`],
     ['击破气球', `${s.stats.hits} 个`],
     ['击破字数', `${s.stats.chars} 字`],
@@ -176,7 +188,7 @@ function buildSummary(s) {
     ['最快反应', reactions.length ? `${Math.round(fast)} ms` : '—'],
     ['落地漏球', `${s.stats.landed} 个`],
     ['地面塌陷', `${s.collapsed.length} / ${s.config.collapseLimit} 列`]
-  ];
+  );
 
   const text = reactions.length
     ? `共击破 ${s.stats.hits} 个目标、${s.stats.chars} 个字，` +
@@ -381,7 +393,11 @@ window.TypingGame = {
   /** 开一轮。传 seed 则使用确定性随机源，便于复现同一局 */
   start(sel = {}, seed) {
     const rng = seed == null ? undefined : rules.createRng(seed);
-    return startRound({ mode: sel.mode || current.mode, level: sel.level ?? current.level }, rng);
+    return startRound({
+      mode: sel.mode || current.mode,
+      level: sel.level ?? current.level,
+      group: sel.group ?? current.group
+    }, rng);
   },
 
   /** 停掉 rAF 的自动推进，改用 advance() 手动控制时间 */
@@ -428,6 +444,8 @@ window.TypingGame = {
       status: state.status,
       mode: state.mode,
       level: state.level,
+      group: state.config.groupId == null ? null : state.config.groupId,
+      keys: state.config.keys || null,
       clock: Math.round(state.clock),
       elapsedMs: Math.round(rules.elapsedMs(state)),
       hits: state.stats.hits,

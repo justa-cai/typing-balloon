@@ -164,11 +164,14 @@ export function createPanel({ perCharBonus }) {
   /**
    * 难度参数卡：把本档实际生效的旋钮值摆出来。
    * @param {object} lv  Difficulty.level(n)
-   * @param {object} cfg Difficulty.config(mode, n, 1)
+   * @param {object} cfg Difficulty.config(mode, n, 1, group)
    * @param {object} mode Difficulty.MODES 里的一项
    */
   function setFacts(lv, cfg, mode) {
-    const content = mode.id === 'letters'
+    const content = mode.id === 'keys'
+      ? `键位组 <span class="ok">${escapeHtml(cfg.groupName)}</span>（` +
+        `${cfg.keys.toUpperCase().split('').join(' ')}）`
+      : mode.id === 'letters'
       ? `可用字母 <span class="ok">${lv.letters}</span> / 26`
       : mode.id === 'words'
         ? `词长档 <span class="ok">${lv.wordTier + 1}/4</span>`

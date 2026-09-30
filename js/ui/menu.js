@@ -26,21 +26,27 @@ export function createMenu({ difficulty, onStart, onRestart, onMenu, sfx = () =>
   const pages = {
     main: $('menu-main'),
     mode: $('menu-mode'),
+    keys: $('menu-keys'),
     level: $('menu-level'),
     help: $('menu-help')
   };
   const modePicker = $('mode-picker');
+  const groupPicker = $('group-picker');
+  const groupDesc = $('group-desc');
   const levelPicker = $('level-picker');
   const levelDesc = $('level-desc');
+  const levelBack = $('level-back');
   const summary = $('game-summary');
   const toastEl = $('toast');
 
-  let selection = { mode: difficulty.MODES[0].id, level: 0 };
+  let selection = { mode: difficulty.MODES[0].id, level: 0, group: 0 };
   let toastTimer = 0;
 
   buildModeButtons();
+  buildGroupButtons();
   buildLevelButtons();
   bindEvents();
+  renderGroupDesc();
   renderLevelDesc();
 
   // ── 构建 ──────────────────────────────────────────────────────────
@@ -60,6 +66,26 @@ export function createMenu({ difficulty, onStart, onRestart, onMenu, sfx = () =>
         renderLevelDesc();
       });
       modePicker.appendChild(btn);
+    }
+    markActive();
+  }
+
+  /** 键位组按钮：从 Difficulty.KEY_GROUPS 现生成，档位按钮同款样式 */
+  function buildGroupButtons() {
+    groupPicker.innerHTML = '';
+    for (const g of difficulty.KEY_GROUPS) {
+      const btn = document.createElement('button');
+      btn.className = 'level-btn';
+      btn.dataset.group = String(g.group);
+      btn.textContent = `${g.group} ${g.name}`;
+      btn.addEventListener('click', () => {
+        selection.group = g.group;
+        click();
+        markActive();
+        renderGroupDesc();
+        renderLevelDesc();
+      });
+      groupPicker.appendChild(btn);
     }
     markActive();
   }
@@ -87,7 +113,12 @@ export function createMenu({ difficulty, onStart, onRestart, onMenu, sfx = () =>
     // 直接开局等于把模式和难度锁死在默认档，那两个选择页就成了死页面。
     $('startbtn').addEventListener('click', () => { click(); showPage('mode'); });
     $('helpbtn').addEventListener('click', () => { click(); showPage('help'); });
-    $('mode-next').addEventListener('click', () => { click(); showPage('level'); });
+    // 键位分区模式要先过「选键位组」这一页，其余模式直接去选难度
+    $('mode-next').addEventListener('click', () => {
+      click();
+      showPage(selection.mode === 'keys' ? 'keys' : 'level');
+    });
+    $('group-next').addEventListener('click', () => { click(); showPage('level'); });
     // 「开始练习」本身不出 click 声——开局会播更正式的 start 音，别叠在一起
     $('levelstart').addEventListener('click', () => { close(); onStart({ ...selection }); });
     for (const el of document.querySelectorAll('.returnbtn')) {
@@ -129,9 +160,20 @@ export function createMenu({ difficulty, onStart, onRestart, onMenu, sfx = () =>
     for (const b of modePicker.children) {
       b.classList.toggle('active', b.dataset.mode === selection.mode);
     }
+    for (const b of groupPicker.children) {
+      b.classList.toggle('active', Number(b.dataset.group) === selection.group);
+    }
     for (const b of levelPicker.children) {
       b.classList.toggle('active', Number(b.dataset.level) === selection.level);
     }
+  }
+
+  /** 键位组说明：这组有哪些键、手指怎么放 */
+  function renderGroupDesc() {
+    const g = difficulty.keyGroup(selection.group);
+    groupDesc.innerHTML =
+      `<b>${escapeHtml(g.name)}</b> · ${g.keys.toUpperCase().split('').join(' ')}<br>` +
+      escapeHtml(g.desc);
   }
 
   /**
@@ -141,13 +183,19 @@ export function createMenu({ difficulty, onStart, onRestart, onMenu, sfx = () =>
   function renderLevelDesc() {
     const lv = difficulty.level(selection.level);
     const mode = difficulty.MODES.find((m) => m.id === selection.mode) || difficulty.MODES[0];
-    const cfg = difficulty.config(selection.mode, selection.level, 1);
+    const cfg = difficulty.config(selection.mode, selection.level, 1, selection.group);
 
-    const chars = mode.id === 'letters'
+    const chars = mode.id === 'keys'
+      ? `键位组 <b>${escapeHtml(difficulty.keyGroup(selection.group).name)}</b>（` +
+        `${difficulty.keyGroup(selection.group).keys.toUpperCase().split('').join(' ')}）`
+      : mode.id === 'letters'
       ? `可用字母 <b>${lv.letters}</b> 个（按词频从高到低解锁）`
       : mode.id === 'words'
         ? `单词长度档 <b>${lv.wordTier + 1}/4</b>（越长越难）`
         : `拼音长度档 <b>${lv.hanziTier + 1}/4</b>（越长越难）`;
+
+    // 难度页的「返回上一步」：键位分区退回选组页，其余模式退回选模式页
+    levelBack.dataset.back = mode.id === 'keys' ? 'keys' : 'mode';
 
     levelDesc.innerHTML =
       `<b>${escapeHtml(mode.name)}</b> · ${escapeHtml(lv.name)}<br>` +
@@ -210,7 +258,9 @@ export function createMenu({ difficulty, onStart, onRestart, onMenu, sfx = () =>
     if (!sel) return;
     if (sel.mode) selection.mode = sel.mode;
     if (Number.isFinite(sel.level)) selection.level = sel.level;
+    if (Number.isFinite(sel.group)) selection.group = sel.group;
     markActive();
+    renderGroupDesc();
     renderLevelDesc();
   }
 

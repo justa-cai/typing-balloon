@@ -15,7 +15,7 @@
  *
  * ── 匹配规则（这里是最容易出歧义的地方）───────────────────────────────
  *
- * 三种模式统一用「输入缓冲 + 前缀匹配」：
+ * 四种模式统一用「输入缓冲 + 前缀匹配」：
  *
  *   - 缓冲为空时，按下的键匹配**以该键开头**的候选气球，取其中**最靠下**
  *     （y 最大、也就是最快落地）的那个作为当前目标；
@@ -25,7 +25,7 @@
  * 字母模式额外有一条硬约束：**同屏不出现重复字母**（生成时过滤）。
  * 否则"按 A 打哪一个 A"就成了随机事件，玩家会觉得游戏在耍赖。
  *
- * 单词/汉字模式同屏也不出重复目标，理由同上。
+ * 键位分区、单词/汉字模式同屏也不出重复目标，理由同上。
  *
  * ── 地面塌陷（失败判定）──────────────────────────────────────────────
  *
@@ -127,7 +127,7 @@ export function bodySize(mode, len) {
  * 新建一局。
  *
  * @param {object} opts
- * @param {string} opts.mode       'letters' | 'words' | 'hanzi'
+ * @param {string} opts.mode       'keys' | 'letters' | 'words' | 'hanzi'
  * @param {number} opts.level      0～9
  * @param {(len: number) => object} opts.configFor
  *        按**目标字符数**取本局生效参数（来自 Difficulty.config）。
@@ -426,12 +426,22 @@ function trySpawn(state) {
 
 /**
  * 选一个本屏还没有的目标。
- * 三种模式共用：先按档位取池子，再滤掉已经在屏上的，最后随机挑。
+ * 四种模式共用：先取候选池，再滤掉已经在屏上的，最后随机挑。
+ *
+ * 键位分区模式不走 letterPool（那是按词频解锁的），候选池就是
+ * configFor 带进来的那一组键——练哪一组，屏上就只出哪一组的键。
  */
 function pickTarget(state) {
   const cfg = state.config;
   const onScreen = new Set(state.balloons.map((b) => b.match));
   let pool;
+
+  if (state.mode === 'keys') {
+    pool = cfg.keys.split('').filter((c) => !onScreen.has(c));
+    if (!pool.length) return null;
+    const ch = pool[Math.floor(state.rand() * pool.length)];
+    return { text: ch.toUpperCase(), match: ch };
+  }
 
   if (state.mode === 'letters') {
     pool = letterPool(cfg.letters).filter((c) => !onScreen.has(c));

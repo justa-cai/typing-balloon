@@ -85,13 +85,55 @@
 
   /** 各模式的生成间隔倍率：目标越长，球出得越稀 */
   var MODE_SPAWN_SCALE = {
+    keys: 1.0,
     letters: 1.0,
     words: 1.3,
     hanzi: 1.3
   };
 
-  /** 三种练习模式。菜单按钮从这里生成，不硬编码文案 */
+  /**
+   * 键位分区的课程表（keys 模式用）。
+   *
+   * 分组依据是"手指 + 键盘区域"：先基准行（home row，双手本位），
+   * 再上排、下排，每段单独练左右手之后来一个合练组巩固，最后全键盘。
+   * 与 0～9 十档难度对称，也是十条，但两根轴互相独立——
+   * 组决定"出哪些键"，档位决定"球落多快、出多密"。
+   *
+   * keys 是小写字符串（rules.js 直接 split 成候选池）；
+   * 只放字母，不放分号/逗号等——输入白名单只认 [a-z0-9]。
+   */
+  var KEY_GROUPS = [
+    { group: 0, name: '基准键·左手', keys: 'asdfg',
+      desc: '左手本位：小指 A、无名指 S、中指 D、食指 F，食指右伸够 G' },
+    { group: 1, name: '基准键·右手', keys: 'hjkl',
+      desc: '右手本位：食指 J（键上有凸点，盲打靠它定位）、中指 K、无名指 L' },
+    { group: 2, name: '基准键·合练', keys: 'asdfghjkl',
+      desc: '整条基准行连起来，双手不离本位' },
+    { group: 3, name: '上排·左手', keys: 'qwert',
+      desc: '左手斜上方一排，击完手指落回基准行' },
+    { group: 4, name: '上排·右手', keys: 'yuiop',
+      desc: '右手斜上方一排，Y 由左手食指负责' },
+    { group: 5, name: '上排·合练', keys: 'qwertyuiop',
+      desc: '整条上排连起来' },
+    { group: 6, name: '下排·左手', keys: 'zxcvb',
+      desc: '左手斜下方一排，B 由左手食指负责' },
+    { group: 7, name: '下排·右手', keys: 'nm',
+      desc: '右手斜下方：N 和 M 是最容易混的一对，单独练熟' },
+    { group: 8, name: '下排·合练', keys: 'zxcvbnm',
+      desc: '整条下排连起来' },
+    { group: 9, name: '全键盘', keys: 'abcdefghijklmnopqrstuvwxyz',
+      desc: '26 个字母全开放，检验前面九组的手指记忆' }
+  ];
+
+  /** 四种练习模式。菜单按钮从这里生成，不硬编码文案。
+   *  键位分区放在第一位：还认不清键盘的初学者打开游戏默认就在这条教学路径上。 */
   var MODES = [
+    {
+      id: 'keys',
+      name: '键位分区',
+      short: '键位',
+      desc: '按键盘区域一组一组练：先基准行左右手，再上排、下排，最后全键盘。适合还认不清键盘的初学者。'
+    },
     {
       id: 'letters',
       name: '英文字母',
@@ -137,14 +179,34 @@
   }
 
   /**
+   * 取一个键位组。容错方式与 level() 相同。
+   * @param {number} n 组号 0～9
+   * @returns {object} { group, name, keys, desc }（副本）
+   */
+  function keyGroup(n) {
+    var i = Math.round(Number(n));
+    if (!isFinite(i)) i = 0;
+    i = Math.max(0, Math.min(KEY_GROUPS.length - 1, i));
+    var src = KEY_GROUPS[i];
+    return {
+      group: src.group,
+      name: src.name,
+      keys: src.keys,
+      desc: src.desc
+    };
+  }
+
+  /**
    * 某一档 + 某一模式的最终生效参数（含按目标长度补偿后的下落时间）。
    *
-   * @param {string} modeId 'letters' | 'words' | 'hanzi'
+   * @param {string} modeId 'keys' | 'letters' | 'words' | 'hanzi'
    * @param {number} n      档位号 0～9
    * @param {number} [len]  目标字符数，缺省按 1 算（即不补偿）
-   * @returns {object} { ...档位参数, mode, spawnMs(已乘倍率), fallSec(已补偿) }
+   * @param {number} [groupId] 键位组号（仅 keys 模式有意义，缺省 0）
+   * @returns {object} { ...档位参数, mode, spawnMs(已乘倍率), fallSec(已补偿),
+   *                    keys/groupId/groupName(仅 keys 模式) }
    */
-  function config(modeId, n, len) {
+  function config(modeId, n, len, groupId) {
     var base = level(n);
     var mode = String(modeId || 'letters');
     var scale = MODE_SPAWN_SCALE[mode] || 1;
@@ -152,6 +214,12 @@
     base.mode = mode;
     base.spawnMs = Math.round(base.spawnMs * scale);
     base.fallSec = base.fallSec + (chars - 1) * PER_CHAR_BONUS_SEC;
+    if (mode === 'keys') {
+      var g = keyGroup(groupId);
+      base.keys = g.keys;
+      base.groupId = g.group;
+      base.groupName = g.name;
+    }
     return base;
   }
 
@@ -159,9 +227,11 @@
     MAX_LEVEL: MAX_LEVEL,
     LEVELS: LEVELS,
     MODES: MODES,
+    KEY_GROUPS: KEY_GROUPS,
     PER_CHAR_BONUS_SEC: PER_CHAR_BONUS_SEC,
     MODE_SPAWN_SCALE: MODE_SPAWN_SCALE,
     level: level,
+    keyGroup: keyGroup,
     config: config
   };
 })(typeof window !== 'undefined' ? window : this);

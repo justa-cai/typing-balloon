@@ -76,7 +76,9 @@ difficulty.js  ──configFor(len)──▶  rules.js  ──state──▶  ui
 `index.html` 里写死任何档位数字或档位文案：
 
 - 档位按钮由 `ui/menu.js` 从 `Difficulty.LEVELS` 现生成（10 个）
-- 模式按钮由 `Difficulty.MODES` 现生成（3 个）
+- 模式按钮由 `Difficulty.MODES` 现生成（4 个，键位分区排第一位——初学者
+  默认入口）；键位组按钮由 `Difficulty.KEY_GROUPS` 现生成（10 个，仅键位
+  分区模式的菜单流程会经过这一页）
 - 菜单里的参数说明、侧栏的「难度参数」卡都调 `Difficulty.config()` 现算
 
 这样改一张表，四处文案自动同步，不会出现"文案说很难、参数很温柔"的漂移。
@@ -172,6 +174,7 @@ L9 : 3 列 ≈ 12 球 × 0.42s ≈  5s
 
 ```js
 TypingGame.start({ mode: 'words', level: 6 }, 12345);  // 传种子 → 可复现
+TypingGame.start({ mode: 'keys', level: 0, group: 3 }); // 键位分区：第 3 组 = qwert
 TypingGame.pause();                    // 停掉 rAF 自动推进
 TypingGame.advance(30000);             // 快进 30 秒
 TypingGame.press('a');                 // 注入一次按键
